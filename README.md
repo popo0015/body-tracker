@@ -93,7 +93,7 @@ To deploy this app on Render.com:
 
 ## Credits
 
-Created by Emil, combining frontend, backend, and data science skills for a practical fitness tracking solution.
+Created by Silvia Popova, combining frontend, backend, and data science skills for a practical fitness tracking solution.
 
 ---
 
