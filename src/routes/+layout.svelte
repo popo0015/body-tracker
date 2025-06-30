@@ -9,6 +9,7 @@
       <a href="/measurements" class="hover:underline">📏 Measurements</a>
       <a href="/meals" class="hover:underline">🥗 Meals</a>
       <a href="/workouts" class="hover:underline">🏋️‍♀️ Workouts</a>
+      <a href="/history" class="hover:underline">📖 History</a>
     </div>
   </div>
 </nav>
