@@ -3,5 +3,5 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [sveltekit()],
-  server: process.env.NODE_ENV === 'development' ? { port: 5173 } : undefined
+  server: process.env.NODE_ENV === 'development' ? { host: 'localhost', port: 5173 } : undefined
 });
