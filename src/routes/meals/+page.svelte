@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { Chart, ArcElement, Tooltip, Legend } from "chart.js";
-  Chart.register(ArcElement, Tooltip, Legend);
+  import { onMount, tick } from "svelte";
+  import { Chart, ArcElement, Tooltip, Legend, PieController } from "chart.js";
+  Chart.register(ArcElement, Tooltip, Legend, PieController);
 
   type Nutrition = {
     calories: number;
@@ -16,7 +16,7 @@
     unit: string;
     nutrition: Nutrition | null;
   };
-  
+
   type Meal = {
     name: string;
     items: MealItem[];
@@ -25,31 +25,42 @@
   const today = new Date().toISOString().split("T")[0];
   const units = ["g", "ml", "tsp", "tbsp", "cup", "piece"];
   const defaultMeals = ["Закуска", "Обяд", "Вечеря", "Снак"];
+  let chartReady = false;
 
-  let meals: Meal[] = defaultMeals.map((name) => ({ name, items: [] }));
+  let meals: Meal[] = defaultMeals.map((name) => ({
+    name,
+    items: [] as MealItem[],
+  }));
+
   let total = { calories: 0, protein: 0, carbs: 0, fat: 0 };
   let chartCanvas: HTMLCanvasElement;
-  let pie: Chart;
+  let pie: Chart | null = null;
 
-  onMount(() => {
+  onMount(async () => {
+    chartReady = true;
     const saved = localStorage.getItem("meals-" + today);
-    if (saved) {
-      meals = JSON.parse(saved);
-      recalculateTotal();
+    try {
+      const parsed = JSON.parse(saved || "[]");
+      if (
+        Array.isArray(parsed) &&
+        parsed.every(
+          (m) => typeof m.name === "string" && Array.isArray(m.items),
+        )
+      ) {
+        meals = parsed;
+      }
+    } catch (e) {
+      console.error("Failed to load saved meals:", e);
     }
+    await tick();
+    recalculateTotal();
   });
 
-  function addProduct(mealIndex: number) {
-    meals[mealIndex].items.push({
-      name: "",
-      amount: 100,
-      unit: "g",
-      nutrition: null,
-    });
-  }
-
-  function removeProduct(mealIndex: number, productIndex: number) {
+  async function removeProduct(mealIndex: number, productIndex: number) {
     meals[mealIndex].items.splice(productIndex, 1);
+    meals[mealIndex].items = [...meals[mealIndex].items];
+    meals = [...meals];
+    await tick();
     recalculateTotal();
     saveMeals();
   }
@@ -88,8 +99,12 @@
   }
 
   function recalculateTotal() {
+    if (!chartCanvas) return;
+
     total = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+
     for (const meal of meals) {
+      if (!Array.isArray(meal.items)) continue;
       for (const item of meal.items) {
         if (item.nutrition) {
           total.calories += item.nutrition.calories;
@@ -100,36 +115,78 @@
       }
     }
 
-    if (pie) pie.destroy();
-    pie = new Chart(chartCanvas, {
-      type: "pie",
-      data: {
-        labels: ["Protein", "Carbs", "Fat"],
-        datasets: [
-          {
-            label: "Macros",
-            data: [total.protein, total.carbs, total.fat],
-            backgroundColor: ["#3b82f6", "#10b981", "#f59e0b"],
-          },
-        ],
-      },
-    });
+    const hasData = total.protein + total.carbs + total.fat > 0;
+
+    if (!hasData) {
+      if (pie) {
+        pie.clear();
+        pie.update();
+      }
+      return;
+    }
+
+    if (!pie) {
+      pie = new Chart(chartCanvas, {
+        type: "pie",
+        data: {
+          labels: ["Protein", "Carbs", "Fat"],
+          datasets: [
+            {
+              label: "Macros",
+              data: [total.protein, total.carbs, total.fat],
+              backgroundColor: ["#3b82f6", "#10b981", "#f59e0b"],
+            },
+          ],
+        },
+        options: {
+          responsive: false,
+          maintainAspectRatio: false,
+          animation: false,
+        },
+      });
+    } else {
+      pie.data.datasets[0].data = [total.protein, total.carbs, total.fat];
+      pie.update();
+    }
   }
 
   function saveMeals() {
     localStorage.setItem("meals-" + today, JSON.stringify(meals));
   }
+
+  async function addProduct(mealIndex: number) {
+    meals[mealIndex].items = [
+      ...meals[mealIndex].items,
+      { name: "", amount: 100, unit: "g", nutrition: null },
+    ];
+    meals = [...meals];
+    await tick();
+    recalculateTotal();
+    saveMeals();
+  }
 </script>
 
 <h1 class="text-2xl font-bold mb-6">🍽️ Meal Tracker</h1>
 
-<div class="bg-white p-4 rounded shadow mb-6">
-  <h2 class="font-semibold mb-2">📊 Daily Overview</h2>
-  <p>Calories: {total.calories.toFixed(0)} kcal</p>
-  <p>Protein: {total.protein.toFixed(1)} g</p>
-  <p>Carbs: {total.carbs.toFixed(1)} g</p>
-  <p>Fat: {total.fat.toFixed(1)} g</p>
-  <canvas bind:this={chartCanvas} class="mt-4 max-w-xs"></canvas>
+<div
+  class="bg-white p-6 rounded shadow mb-6 mx-auto flex flex-col md:flex-row items-center gap-8"
+>
+  <div class="flex-1 space-y-1 text-gray-700">
+    <p class="text-xl font-bold">
+      Calories: <span class="text-indigo-600"
+        >{total.calories.toFixed(0)} kcal</span
+      >
+    </p>
+    <p>
+      Protein: <span class="font-semibold">{total.protein.toFixed(1)} g</span>
+    </p>
+    <p>Carbs: <span class="font-semibold">{total.carbs.toFixed(1)} g</span></p>
+    <p>Fat: <span class="font-semibold">{total.fat.toFixed(1)} g</span></p>
+  </div>
+  <div class="w-64 h-64 relative">
+    <canvas bind:this={chartCanvas} class="absolute inset-0 w-full h-full"
+    ></canvas>
+  </div>
 </div>
 
 {#each meals as meal, i}
