@@ -193,17 +193,25 @@
   }
 </script>
 
-<h1 class="text-2xl font-bold mb-6">📊 History & Progress</h1>
+<h1 class="text-3xl font-extrabold mb-8 text-center flex items-center gap-2">
+  <span>📊</span> History & Progress
+</h1>
 
-<div class="max-w-4xl mx-auto space-y-12">
+<div class="max-w-5xl mx-auto space-y-16 px-4 sm:px-6 lg:px-8">
   <section>
-    <h2 class="text-lg font-semibold mb-4">Weight Over Last 30 Days</h2>
-    <canvas bind:this={weightChartCanvas} class="w-full max-h-80"></canvas>
+    <h2 class="text-xl font-semibold mb-6 border-b border-gray-300 pb-2">Weight Over Last 30 Days</h2>
+    <canvas
+      bind:this={weightChartCanvas}
+      class="w-full max-h-96 rounded-lg shadow-md bg-white p-4"
+    ></canvas>
   </section>
 
   <section>
-    <h2 class="text-lg font-semibold mb-4">Calories Over Last 30 Days</h2>
-    <canvas bind:this={caloriesChartCanvas} class="w-full max-h-80"></canvas>
+    <h2 class="text-xl font-semibold mb-6 border-b border-gray-300 pb-2">Calories Over Last 30 Days</h2>
+    <canvas
+      bind:this={caloriesChartCanvas}
+      class="w-full max-h-96 rounded-lg shadow-md bg-white p-4"
+    ></canvas>
   </section>
 
   <section>
