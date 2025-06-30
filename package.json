@@ -4,6 +4,7 @@
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
+		"preinstall": "npm set progress=false && npm config set optional false",
 		"dev": "vite dev",
 		"build": "vite build",
 		"preview": "vite preview",
@@ -33,11 +34,5 @@
 		"@prisma/client": "^6.10.1",
 		"bcryptjs": "^3.0.2",
 		"chart.js": "^4.5.0"
-	},
-	"resolutions": {
-		"@rollup/rollup": "3.29.0"
-	},
-	"overrides": {
-		"@rollup/rollup": "3.29.0"
 	}
 }
