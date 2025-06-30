@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { prisma } from '$lib/prisma';
+import type { RequestHandler } from './$types.js';
+import { prisma } from '$lib/prisma.js';
 
 export const GET: RequestHandler = async ({ locals }) => {
   if (!locals.user) throw error(401, 'Unauthorized');

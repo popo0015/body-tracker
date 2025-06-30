@@ -150,8 +150,21 @@
     }
   }
 
-  function saveMeals() {
-    localStorage.setItem("meals-" + today, JSON.stringify(meals));
+  async function saveMeals() {
+    const response = await fetch("/meals", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        date: today,
+        items: meals.flatMap((meal) => meal.items), // flatten all meal items into one array
+      }),
+    });
+
+    if (!response.ok) {
+      alert("Failed to save meals");
+    } else {
+      alert("Meals saved successfully!");
+    }
   }
 
   async function addProduct(mealIndex: number) {

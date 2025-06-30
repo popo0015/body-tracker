@@ -1,30 +1,23 @@
 import { json, error } from '@sveltejs/kit';
-import type { RequestHandler } from './$types';
-import { prisma } from '$lib/prisma';
-
-export const GET: RequestHandler = async ({ locals }) => {
-  if (!locals.user) throw error(401, 'Unauthorized');
-
-  const workouts = await prisma.workout.findMany({
-    where: { userId: locals.user.id },
-    orderBy: { date: 'desc' }
-  });
-
-  return json(workouts);
-};
+import type { RequestHandler } from './$types.js';
+import { prisma } from '$lib/prisma.js';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
   if (!locals.user) throw error(401, 'Unauthorized');
+
   const data = await request.json();
 
-  if (!data.date) throw error(400, 'Date required');
+  if (!data.date || !data.exercises) throw error(400, 'Date and exercises are required');
 
-  // Adjust properties to match your Prisma schema for workouts
+  if (!Array.isArray(data.exercises) || data.exercises.length === 0) {
+    throw error(400, 'Exercises must be a non-empty array');
+  }
+
   const workout = await prisma.workout.create({
     data: {
       userId: locals.user.id,
       date: new Date(data.date),
-      exercises: data.exercises // Assuming exercises is JSON or array, adapt as needed
+      exercises: data.exercises
     }
   });
 

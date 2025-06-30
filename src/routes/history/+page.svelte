@@ -44,11 +44,20 @@
         nutrition: { calories: number } | null;
       }[];
     }[];
+    workouts: {
+      date: string;
+      exercises: {
+        name: string;
+        sets: { reps: number; weight: number }[];
+      }[];
+    }[];
   };
 
   let measurements = data.measurements || [];
   let meals = data.meals || [];
+  let workouts = data.workouts || [];
 
+  // Calculate total calories per day from meals
   let caloriesByDay = meals.map((day) => {
     let totalCalories = 0;
     for (const meal of day.items) {
