@@ -33,5 +33,11 @@
 		"@prisma/client": "^6.10.1",
 		"bcryptjs": "^3.0.2",
 		"chart.js": "^4.5.0"
+	},
+	"resolutions": {
+		"@rollup/rollup": "3.29.0"
+	},
+	"overrides": {
+		"@rollup/rollup": "3.29.0"
 	}
 }
