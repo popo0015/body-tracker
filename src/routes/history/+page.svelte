@@ -1,34 +1,69 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { Chart, LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend, BarController, BarElement } from 'chart.js';
-  Chart.register(LineController, LineElement, PointElement, LinearScale, Title, CategoryScale, Tooltip, Legend, BarController, BarElement);
+  import { onMount } from "svelte";
+  import {
+    Chart,
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    Title,
+    CategoryScale,
+    Tooltip,
+    Legend,
+    BarController,
+    BarElement,
+  } from "chart.js";
 
-  type MeasurementEntry = {
-    date: string;
-    waist: number;
-    hips: number;
-    thigh: number;
-    arm: number;
-    chest: number;
-    underNavel: number;
-    weight: number;
+  Chart.register(
+    LineController,
+    LineElement,
+    PointElement,
+    LinearScale,
+    Title,
+    CategoryScale,
+    Tooltip,
+    Legend,
+    BarController,
+    BarElement,
+  );
+
+  export let data: {
+    measurements: {
+      date: string;
+      waist: number;
+      hips: number;
+      thigh: number;
+      arm: number;
+      chest: number;
+      underNavel: number;
+      weight: number;
+    }[];
+    meals: {
+      date: string;
+      items: {
+        nutrition: { calories: number } | null;
+      }[];
+    }[];
   };
 
-  type DailyCalories = {
-    date: string;
-    calories: number;
-  };
+  let measurements = data.measurements || [];
+  let meals = data.meals || [];
 
-  let measurements: MeasurementEntry[] = [];
-  let caloriesByDay: DailyCalories[] = [];
+  let caloriesByDay = meals.map((day) => {
+    let totalCalories = 0;
+    for (const meal of day.items) {
+      if (meal.nutrition?.calories) totalCalories += meal.nutrition.calories;
+    }
+    return { date: day.date, calories: totalCalories };
+  });
 
   let weightChartCanvas: HTMLCanvasElement;
-  let weightChart: Chart;
-
   let caloriesChartCanvas: HTMLCanvasElement;
+
+  let weightChart: Chart;
   let caloriesChart: Chart;
 
-  // For small measurement charts, one per measurement
+  // Small measurement chart canvases
   let waistChartCanvas: HTMLCanvasElement;
   let hipsChartCanvas: HTMLCanvasElement;
   let thighChartCanvas: HTMLCanvasElement;
@@ -36,144 +71,125 @@
   let chestChartCanvas: HTMLCanvasElement;
   let underNavelChartCanvas: HTMLCanvasElement;
 
-  const today = new Date();
-  const lastMonth = new Date(today);
-  lastMonth.setDate(today.getDate() - 30);
-
-  // Helper: format date YYYY-MM-DD
-  function formatDate(date: Date) {
-    return date.toISOString().split('T')[0];
-  }
-
   onMount(() => {
-    // Load measurements from localStorage
-    const saved = localStorage.getItem('measurements');
-    if (saved) {
-      const parsed: MeasurementEntry[] = JSON.parse(saved);
-
-      // Filter last 30 days and sort ascending
-      measurements = parsed
-        .filter(entry => new Date(entry.date) >= lastMonth)
-        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }
-
-    // Load calories from meal tracker localStorage, aggregate by day
-    const mealKeys = Object.keys(localStorage).filter(key => key.startsWith('meals-'));
-    caloriesByDay = mealKeys.map(key => {
-      const meals = JSON.parse(localStorage.getItem(key) || '[]');
-      let totalCalories = 0;
-      for (const meal of meals) {
-        for (const item of meal.items) {
-          if (item.nutrition?.calories) totalCalories += item.nutrition.calories;
-        }
-      }
-      return { date: key.replace('meals-', ''), calories: totalCalories };
-    }).filter(day => new Date(day.date) >= lastMonth);
-
-    caloriesByDay.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    // Build charts after DOM ready
-    setTimeout(() => {
-      buildWeightChart();
-      buildCaloriesChart();
-      buildMeasurementCharts();
-    }, 100);
+    buildWeightChart();
+    buildCaloriesChart();
+    buildMeasurementCharts();
   });
 
   function buildWeightChart() {
-    if (weightChart) weightChart.destroy();
-
+    weightChart?.destroy();
     weightChart = new Chart(weightChartCanvas, {
-      type: 'line',
+      type: "line",
       data: {
-        labels: measurements.map(m => m.date),
-        datasets: [{
-          label: 'Weight (kg)',
-          data: measurements.map(m => m.weight),
-          borderColor: '#3b82f6',
-          backgroundColor: '#93c5fd44',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4
-        }]
+        labels: measurements.map((m) => m.date),
+        datasets: [
+          {
+            label: "Weight (kg)",
+            data: measurements.map((m) => m.weight),
+            borderColor: "#3b82f6",
+            backgroundColor: "#93c5fd44",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+          },
+        ],
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { display: true }
-        },
-        scales: {
-          y: { beginAtZero: false }
-        }
-      }
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: false } },
+      },
     });
   }
 
   function buildCaloriesChart() {
-    if (caloriesChart) caloriesChart.destroy();
-
+    caloriesChart?.destroy();
     caloriesChart = new Chart(caloriesChartCanvas, {
-      type: 'line',
+      type: "line",
       data: {
-        labels: caloriesByDay.map(c => c.date),
-        datasets: [{
-          label: 'Calories',
-          data: caloriesByDay.map(c => c.calories),
-          borderColor: '#10b981',
-          backgroundColor: '#6ee7b744',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4
-        }]
+        labels: caloriesByDay.map((c) => c.date),
+        datasets: [
+          {
+            label: "Calories",
+            data: caloriesByDay.map((c) => c.calories),
+            borderColor: "#10b981",
+            backgroundColor: "#6ee7b744",
+            fill: true,
+            tension: 0.3,
+            pointRadius: 4,
+          },
+        ],
       },
       options: {
         responsive: true,
-        plugins: {
-          legend: { display: true }
-        },
-        scales: {
-          y: { beginAtZero: true }
-        }
-      }
+        plugins: { legend: { display: true } },
+        scales: { y: { beginAtZero: true } },
+      },
+    });
+  }
+
+  function buildSmallChart(
+    canvas: HTMLCanvasElement,
+    label: string,
+    data: number[],
+  ) {
+    return new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: measurements.map((m) => m.date),
+        datasets: [
+          {
+            label,
+            data,
+            borderColor: "#f97316",
+            backgroundColor: "#fdba74",
+            fill: false,
+            tension: 0.3,
+            pointRadius: 2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: false } },
+        elements: { point: { radius: 0 } },
+      },
     });
   }
 
   function buildMeasurementCharts() {
-    // Helper for building a small line chart for a measurement
-    function buildSmallChart(canvas: HTMLCanvasElement, label: string, data: number[]) {
-      return new Chart(canvas, {
-        type: 'line',
-        data: {
-          labels: measurements.map(m => m.date),
-          datasets: [{
-            label,
-            data,
-            borderColor: '#f97316',
-            backgroundColor: '#fdba74',
-            fill: false,
-            tension: 0.3,
-            pointRadius: 2,
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false }
-          },
-          scales: {
-            y: { beginAtZero: false }
-          },
-          elements: { point: { radius: 0 } }
-        }
-      });
-    }
-
-    buildSmallChart(waistChartCanvas, 'Waist (талия)', measurements.map(m => m.waist));
-    buildSmallChart(hipsChartCanvas, 'Hips (ханш)', measurements.map(m => m.hips));
-    buildSmallChart(thighChartCanvas, 'Thigh (бедро)', measurements.map(m => m.thigh));
-    buildSmallChart(armChartCanvas, 'Arm (ръка)', measurements.map(m => m.arm));
-    buildSmallChart(chestChartCanvas, 'Chest (гръдна обиколка)', measurements.map(m => m.chest));
-    buildSmallChart(underNavelChartCanvas, 'Under Navel (през пъпа)', measurements.map(m => m.underNavel));
+    buildSmallChart(
+      waistChartCanvas,
+      "Waist (талия)",
+      measurements.map((m) => m.waist),
+    );
+    buildSmallChart(
+      hipsChartCanvas,
+      "Hips (ханш)",
+      measurements.map((m) => m.hips),
+    );
+    buildSmallChart(
+      thighChartCanvas,
+      "Thigh (бедро)",
+      measurements.map((m) => m.thigh),
+    );
+    buildSmallChart(
+      armChartCanvas,
+      "Arm (ръка)",
+      measurements.map((m) => m.arm),
+    );
+    buildSmallChart(
+      chestChartCanvas,
+      "Chest (гръдна обиколка)",
+      measurements.map((m) => m.chest),
+    );
+    buildSmallChart(
+      underNavelChartCanvas,
+      "Under Navel (през пъпа)",
+      measurements.map((m) => m.underNavel),
+    );
   }
 </script>
 
